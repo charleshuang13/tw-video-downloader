@@ -12,6 +12,7 @@ dist/
 
 # 图标生成产物（icon.png 是源文件，保留）
 icon.icns
+icon.ico
 icon.iconset/
 
 # macOS

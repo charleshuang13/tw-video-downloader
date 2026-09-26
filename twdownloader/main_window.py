@@ -215,7 +215,7 @@ class MainWindow(QWidget):
         self.log.setFixedHeight(140)
         self.log.setStyleSheet(
             f"background:#171820; border:1px solid #3a3d4a; border-radius:6px; "
-            f"font-family:'JetBrains Mono','Menlo',monospace; font-size:12px; color:#c9cddb;"
+            f"font-family:'JetBrains Mono','Menlo','Consolas',monospace; font-size:12px; color:#c9cddb;"
         )
         root.addWidget(self.log)
 
@@ -402,7 +402,12 @@ class MainWindow(QWidget):
     def on_open_dir(self):
         d = self.outdir()
         d.mkdir(parents=True, exist_ok=True)
-        subprocess.Popen(["open", str(d)])
+        if sys.platform == "darwin":
+            subprocess.Popen(["open", str(d)])
+        elif sys.platform.startswith("win"):
+            os.startfile(str(d))                     # noqa: S606  Windows 专用
+        else:
+            subprocess.Popen(["xdg-open", str(d)])
 
     def on_download(self):
         if not self.tweets:

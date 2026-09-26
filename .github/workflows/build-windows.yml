@@ -1,0 +1,72 @@
+name: Build Windows exe
+
+# 打 tag（v*）时自动出包并挂到 Release；也可以在 Actions 页面手动点跑，产物在 Artifacts 里。
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: 装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 离线单元测试（Windows 上验一遍逻辑）
+        run: python -m unittest discover -s tests -v
+
+      - name: 生成图标
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python make_icon.py
+
+      - name: PyInstaller 打包
+        run: |
+          pyinstaller --noconfirm --windowed --onefile `
+            --name TwVideoDownloader `
+            --icon icon.ico `
+            --hidden-import PySide6.QtSvg `
+            main.py
+          if (-not (Test-Path dist\TwVideoDownloader.exe)) { throw "没出 exe" }
+          Move-Item dist\TwVideoDownloader.exe "dist\推特视频下载器.exe"
+          Get-Item "dist\推特视频下载器.exe" | Select-Object Name, Length
+
+      - name: 冒烟：真跑一次解析+下载（不开窗口）
+        # 依赖第三方接口，偶发抽风不该让构建变红 —— 日志里能看到真假
+        continue-on-error: true
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          & "dist\推特视频下载器.exe" --selftest
+          if ($LASTEXITCODE -ne 0) { Write-Warning "自检没通过，看上面输出" }
+
+      - name: 打包成 zip
+        run: python tools/make_win_zip.py ${{ github.ref_name }}
+
+      - name: 上传 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/*.zip
+          if-no-files-found: error
+
+      - name: 挂到 Release（只在 tag 时）
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view ${{ github.ref_name }} *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create ${{ github.ref_name }} --title "${{ github.ref_name }}" --generate-notes
+          }
+          gh release upload ${{ github.ref_name }} (Get-ChildItem dist\*.zip).FullName --clobber

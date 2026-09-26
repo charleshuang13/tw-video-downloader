@@ -21,9 +21,15 @@
 
 ### 方式一：直接用（推荐）
 
-从 [Releases](../../releases) 或 `dist/推特视频下载器_mac_arm64.zip` 拿到打包好的 app，解压后拖进「应用程序」即可。独立的 arm64 应用，**不需要装 Python、不需要装任何依赖**。
+到 [Releases](../../releases) 下载对应平台的包，解压即用，**不需要装 Python、不需要装任何依赖**：
 
-> 首次打开如果提示「无法验证开发者」，在「系统设置 → 隐私与安全性」里点一次「仍要打开」即可。
+| 平台 | 包 | 说明 |
+| --- | --- | --- |
+| macOS（M 系列） | `TwVideoDownloader_v1.0.0_mac_arm64.zip` | 解压出 `推特视频下载器.app`，拖进「应用程序」 |
+| Windows（64 位） | `TwVideoDownloader_v1.0.0_windows_x64.zip` | 解压出 `推特视频下载器.exe`，双击运行（单文件，首次启动会慢几秒） |
+
+> macOS 首次打开如果提示「无法验证开发者」，在「系统设置 → 隐私与安全性」里点一次「仍要打开」即可。
+> Windows 如果被 SmartScreen 拦下，点「更多信息 → 仍要运行」。
 
 ### 方式二：从源码跑
 
@@ -36,14 +42,17 @@ python3 -m venv .venv
 .venv/bin/python main.py
 ```
 
-### 方式三：自己打包成 .app
+### 方式三：自己打包
 
 ```bash
+# macOS → dist/推特视频下载器.app
 ./build_mac.sh
-# 产物：dist/推特视频下载器.app
+
+# Windows → dist\推特视频下载器.exe（.bat 里有中文输出，需要系统支持 UTF-8）
+build_win.bat
 ```
 
-打包脚本会自动建 venv、生成图标、调 PyInstaller。Windows 需要把 `--windowed` 那套命令搬到 Windows 机器上（PyInstaller 不支持交叉编译）。
+两个脚本都会自动建 venv、生成图标、调 PyInstaller。**PyInstaller 不能交叉编译**：Mac 上只能出 Mac 包，Windows 包必须在 Windows 机器上打（或者用仓库里的 GitHub Actions，见下）。
 
 ## 命令行版
 
@@ -69,8 +78,8 @@ python3 -m venv .venv
 
 - **画质取决于 X 给的转码档位，不是固定值**。同一条推文可能提供 1080p / 720p / 360p 好几档，也可能只有 320p；竖屏视频通常最高卡在 720x1280（源是 1080x1920 也不给 1080p），横屏视频可能给到 1920x1080。下拉框里的选项是**按你解析到的推文动态生成的**，接口给几档就列几档。
 - 只支持**公开推文**。受保护账号、需要登录才可见的内容拿不到。
-- 依赖第三方接口（fxtwitter / vxtwitter）。它们挂了的时候，如果你本机装了 `yt-dlp` 仍能下载。
-- 打包产物是 **arm64 macOS**（M 系列芯片）。Intel Mac 需要重新打包。
+- 依赖第三方接口（fxtwitter / vxtwitter）。它们挂了的时候，如果你本机装了 `yt-dlp` 仍能下载。Windows 上如果装了 yt-dlp（例如 `winget install yt-dlp`），兜底路径同样生效。
+- 预编译包覆盖 **macOS arm64（M 系列）** 和 **Windows x64**。Intel Mac 需要自己用 `build_mac.sh` 重新打包。
 
 ## 常见问题
 
@@ -94,6 +103,7 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python test_smoke.py
 
 # 打包产物的自检（真跑一次解析 + 下载，排查打包环境问题）
 "dist/推特视频下载器.app/Contents/MacOS/推特视频下载器" --selftest
+# Windows 上对应：dist\推特视频下载器.exe --selftest
 
 # 生成界面截图
 QT_QPA_PLATFORM=offscreen .venv/bin/python screenshot.py
@@ -109,8 +119,11 @@ twdownloader/
   main_window.py         主窗口
 tests/test_offline.py    离线单元测试
 tools/twdl.sh            命令行版
-make_icon.py             图标生成（QPainter 绘制）
+tools/make_win_zip.py    Windows 产物打包
+make_icon.py             图标生成（QPainter 绘制，同时输出 icon.png 和 icon.ico）
 build_mac.sh             一键打包 macOS 应用
+build_win.bat            一键打包 Windows exe
+.github/workflows/       CI：Linux 跑单测；Windows 出 exe
 ```
 
 ## 免责声明
