@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# PyInstaller 构建产物
+build/
+dist/
+*.spec
+
+# 图标生成产物（icon.png 是源文件，保留）
+icon.icns
+icon.iconset/
+
+# macOS
+.DS_Store
