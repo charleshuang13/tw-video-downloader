@@ -198,6 +198,27 @@ class TestDownloadGuard(unittest.TestCase):
             self.assertFalse((dest.parent / (dest.name + ".part")).exists())
 
 
+class TestCompat(unittest.TestCase):
+    """Windows 控制台默认 cp1252，打印中文会 UnicodeEncodeError（CI 上真挂过）。"""
+
+    def test_enable_utf8_stdout(self):
+        from twdownloader import compat
+
+        compat.enable_utf8_stdout()
+        print("中文打印正常：推特视频下载器")
+
+    def test_survives_none_stdout(self):
+        # 打包成 windowed 应用时 sys.stdout 是 None
+        from twdownloader import compat
+
+        old = sys.stdout
+        try:
+            sys.stdout = None
+            compat.enable_utf8_stdout()
+        finally:
+            sys.stdout = old
+
+
 class TestSummary(unittest.TestCase):
     def test_truncate(self):
         tw = api.fx_json_to_tweet(FX_VIDEO)

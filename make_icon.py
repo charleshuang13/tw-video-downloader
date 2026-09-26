@@ -108,6 +108,9 @@ def write_ico(pm: QPixmap, path: Path, sizes=ICO_SIZES) -> list:
 
 
 def main():
+    from twdownloader.compat import enable_utf8_stdout
+
+    enable_utf8_stdout()
     app = QApplication(sys.argv)          # noqa: F841  QPixmap 之前必须先有 QApplication
     pm = draw()
     pm.save(str(OUT_PNG), "PNG")

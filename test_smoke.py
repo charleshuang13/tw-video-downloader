@@ -14,7 +14,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from twdownloader import api  # noqa: E402
+from twdownloader.compat import enable_utf8_stdout  # noqa: E402
 from twdownloader.main_window import MainWindow  # noqa: E402
+
+enable_utf8_stdout()
 
 TWEET = "https://x.com/NASA/status/1816862466816496101"
 FAILS = []

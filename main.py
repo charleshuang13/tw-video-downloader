@@ -40,6 +40,10 @@ def selftest(url: str | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from twdownloader.compat import enable_utf8_stdout
+
+    enable_utf8_stdout()
+
     if "--selftest" in sys.argv:
         i = sys.argv.index("--selftest")
         arg = sys.argv[i + 1] if len(sys.argv) > i + 1 else None
