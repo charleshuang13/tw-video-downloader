@@ -7,6 +7,9 @@ on:
     tags:
       - "v*"
 
+env:
+  PYTHONIOENCODING: utf-8
+
 jobs:
   build:
     runs-on: windows-latest
@@ -41,14 +44,16 @@ jobs:
           Move-Item dist\TwVideoDownloader.exe "dist\推特视频下载器.exe"
           Get-Item "dist\推特视频下载器.exe" | Select-Object Name, Length
 
-      - name: 冒烟：真跑一次解析+下载（不开窗口）
-        # 依赖第三方接口，偶发抽风不该让构建变红 —— 日志里能看到真假
-        continue-on-error: true
-        env:
-          QT_QPA_PLATFORM: offscreen
+      - name: 冒烟：让 exe 真跑一次解析+下载
+        # windowed 的 exe 没有控制台，看不到 print，所以让它把自检结果写到文件里。
+        # Start-Process -Wait 才能拿到真实退出码（用 & 调 GUI 程序 PowerShell 不会等）。
         run: |
-          & "dist\推特视频下载器.exe" --selftest
-          if ($LASTEXITCODE -ne 0) { Write-Warning "自检没通过，看上面输出" }
+          $log = Join-Path $PWD "selftest.log"
+          $p = Start-Process -FilePath "dist\推特视频下载器.exe" `
+                 -ArgumentList "--selftest", "--out", "`"$log`"" -Wait -PassThru
+          if (Test-Path $log) { Get-Content $log -Encoding UTF8 } else { Write-Warning "没生成自检日志" }
+          Write-Host "exe 退出码: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "打包出来的 exe 自检失败" }
 
       - name: 打包成 zip
         run: python tools/make_win_zip.py ${{ github.ref_name }}
@@ -57,7 +62,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            selftest.log
           if-no-files-found: error
 
       - name: 挂到 Release（只在 tag 时）

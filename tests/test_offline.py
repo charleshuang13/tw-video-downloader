@@ -219,6 +219,32 @@ class TestCompat(unittest.TestCase):
             sys.stdout = old
 
 
+class TestSelftest(unittest.TestCase):
+    """自检模式：Windows 的 windowed exe 没控制台，结果必须能落盘。"""
+
+    def test_parse_argv(self):
+        import main
+
+        self.assertEqual(main._parse_argv(["app", "--selftest"]), (None, None))
+        self.assertEqual(
+            main._parse_argv(["app", "--selftest", "https://x.com/a/status/1", "--out", "/tmp/l.txt"]),
+            ("https://x.com/a/status/1", "/tmp/l.txt"),
+        )
+        self.assertEqual(main._parse_argv(["app", "--out", "/tmp/l.txt"])[0], None)
+
+    def test_failure_still_writes_log(self):
+        import main
+
+        with tempfile.TemporaryDirectory() as d:
+            log = Path(d) / "selftest.log"
+            rc = main.selftest("这不是链接", str(log))
+            self.assertEqual(rc, 1)
+            self.assertTrue(log.exists())
+            body = log.read_text(encoding="utf-8")
+            self.assertIn("自检失败", body)
+            self.assertIn("这不是链接", body)
+
+
 class TestSummary(unittest.TestCase):
     def test_truncate(self):
         tw = api.fx_json_to_tweet(FX_VIDEO)

@@ -9,6 +9,10 @@ import sys
 import zipfile
 from pathlib import Path
 
+# Windows 控制台默认 cp1252，打印中文会 UnicodeEncodeError（CI 上真挂过）
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 EXE = DIST / "推特视频下载器.exe"
